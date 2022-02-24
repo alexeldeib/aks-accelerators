@@ -56,7 +56,8 @@ logexec docker load -i ${GITHUB_WORKSPACE}/gpu-drivers.tar
 logexec docker images
 
 # run it
-logexec docker run --name sleeper -d --rm gpu:drivers /opt/bin/sleep infinity
+mkdir -p /opt/nvidia
+logexec docker run --name sleeper -v --mount /opt/nvidia:/opt -d --rm gpu:drivers /opt/bin/sleep infinity
 
 # list contents for validation
 logexec docker exec sleeper apt update
@@ -64,3 +65,4 @@ logexec docker exec sleeper apt install -y tree
 logexec docker exec sleeper tree -L 3 /opt
 logexec docker ps
 logexec docker stop sleeper
+logexec tree -L /opt/nvidia
