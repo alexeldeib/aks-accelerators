@@ -1,0 +1,112 @@
+name: Build
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs: 
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cache skopeo
+        uses: actions/cache@v2
+        id: cache-skopeo
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cache/bin/skopeo 
+          key: ${{ runner.os }}-skopeo
+      - name: Cache umoci
+        uses: actions/cache@v2
+        id: cache-umoci
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cache/bin/umoci 
+          key: ${{ runner.os }}-umoci
+      - name: Cache nsenter
+        uses: actions/cache@v2
+        id: cache-nsenter
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cache/bin/nsenter 
+          key: ${{ runner.os }}-nsenter
+      - name: Cache sleep
+        uses: actions/cache@v2
+        id: cache-sleep
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cache/bin/sleep 
+          key: ${{ runner.os }}-sleep
+      - name: Cache musl
+        uses: actions/cache@v2
+        id: cache-musl-src
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cache/musl-src 
+          key: ${{ runner.os }}-musl-src
+      - name: Cache sponge
+        uses: actions/cache@v2
+        id: cache-sponge
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/sponge   
+          key: ${{ runner.os }}-sponge 
+      - run: sudo apt update && sudo apt install -y moreutils && sudo cp /usr/bin/sponge ~/.cargo/bin/sponge  
+        if: steps.cache-sponge.outputs.cache-hit != 'true'
+      - name: setup env
+        run: |
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          ls -al ~/.cargo/bin
+          pwd 
+
+          mkdir -p ${GITHUB_WORKSPACE}/bin
+          mkdir -p ~/.cache/bin
+      - name: build skopeo
+        if: steps.cache-skopeo.outputs.cache-hit != 'true'
+        run: |
+          bash build/skopeo.sh
+          cp -a ${GITHUB_WORKSPACE}/bin/skopeo ~/.cache/bin/skopeo
+      - name: build umoci
+        if: steps.cache-umoci.outputs.cache-hit != 'true'
+        run: |
+          bash build/umoci.sh
+          cp -a ${GITHUB_WORKSPACE}/bin/umoci ~/.cache/bin/umoci
+      - name: build nsenter
+        if: steps.cache-nsenter.outputs.cache-hit != 'true'
+        run: |
+          bash build/nsenter.sh
+          cp -a ${GITHUB_WORKSPACE}/bin/nsenter ~/.cache/bin/nsenter
+      - name: build musl
+        # if: steps.cache-musl-src.outputs.cache-hit != 'true'
+        run: |
+          bash build/musl.sh
+          cp -a  ${GITHUB_WORKSPACE}/musl-src ~/.cache/musl-src
+      - name: build sleep
+        if: steps.cache-sleep.outputs.cache-hit != 'true'
+        run: |
+          bash build/sleep.sh
+          cp -a ${GITHUB_WORKSPACE}/bin/sleep ~/.cache/bin/sleep
+      
+      - name: build image
+        run: |
+          bash images/gpu/build.sh
+          
+      - uses: actions/upload-artifact@v2
+        with:
+          name: nsenter.tar
+          path: nsenter.tar
