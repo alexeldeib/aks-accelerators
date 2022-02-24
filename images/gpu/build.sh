@@ -67,4 +67,8 @@ logexec docker exec sleeper mv /opt/data /host/data
 logexec docker exec sleeper tree -L 3 /host
 logexec docker ps
 logexec docker stop sleeper
-logexec tree -L /opt/nvidia
+logexec sudo dpkg -i /opt/nvidia/libnvidia-container1*
+logexec sudo dpkg -i /opt/nvidia/libnvidia-container-tools*
+logexec sudo dpkg -i /opt/nvidia/nvidia-container-toolkit*
+logexec sudo dpkg -i /opt/nvidia/nvidia-container-runtime*
+logexec dpkg -l | grep nvidia
