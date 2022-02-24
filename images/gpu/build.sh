@@ -55,7 +55,7 @@ logexec cp -a gpu-drivers ${GITHUB_WORKSPACE}/gpu-drivers.tar
 logexec docker load -i ${GITHUB_WORKSPACE}/gpu-drivers.tar
 logexec docker images
 
-# run it
+# run it, copy contents to host
 mkdir -p /opt/nvidia
 logexec docker run --name sleeper --mount type=bind,src=/opt/nvidia,dst=/host -d --rm gpu:drivers /opt/bin/sleep infinity
 
@@ -63,12 +63,17 @@ logexec docker run --name sleeper --mount type=bind,src=/opt/nvidia,dst=/host -d
 logexec docker exec sleeper apt update
 logexec docker exec sleeper apt install -y tree
 logexec docker exec sleeper tree -L 3 /opt
+
+# install components to host as a sanity check the container works
 logexec docker exec sleeper mv /opt/data /host/data
-logexec docker exec sleeper tree -L 3 /host
 for package in $NVIDIA_PACKAGES; do
     logexec sudo dpkg -i /opt/nvidia/data/${package}_${nvidia_toolkit_version}_amd64.deb 
 done
 logexec sudo dpkg -i /opt/nvidia/data/nvidia-container-runtime_${nvidia_container_runtime_version}_all.deb
+
+# list installed packages for validation
 logexec dpkg -l | grep nvidia
+
+# clean up
 logexec docker ps
 logexec docker stop sleeper
