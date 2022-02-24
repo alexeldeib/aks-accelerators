@@ -57,7 +57,7 @@ logexec docker images
 
 # run it
 mkdir -p /opt/nvidia
-logexec docker run --name sleeper -v --mount /opt/nvidia:/opt -d --rm gpu:drivers /opt/bin/sleep infinity
+logexec docker run --name sleeper --mount type=bind,src=/opt/nvidia,dst=/opt -d --rm gpu:drivers /opt/bin/sleep infinity
 
 # list contents for validation
 logexec docker exec sleeper apt update
